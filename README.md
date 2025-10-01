@@ -64,13 +64,13 @@ Jayamesh Commander is a powerful, offline-first project management application b
 
 ```bash
 # Clone and run locally
-git clone [your-repo-url]
+git clone https://github.com/Renishchandera/Jayamesh-PM
 cd jayamesh-pm
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and start managing projects immediately!
+Open http://localhost:5173 or according to your machine, and start managing projects immediately!
 
 ## 💡 Core Philosophy
 
