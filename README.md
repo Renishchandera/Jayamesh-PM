@@ -160,13 +160,6 @@ Built with ❤️ for developers who want to ship great things without the tooli
 
 **Love this tool? Check out what else we're building:**
 
-- 🎮 **[Game Projects](https://jayamesh.com/games)** - Our latest gaming adventures
-- 🛠️ **[Open Source](https://jayamesh.com/opensource)** - More tools for developers
-- 📚 **[Blog](https://jayamesh.com/blog)** - Insights on development and design
-- 💼 **[Careers](https://jayamesh.com/careers)** - Join our growing team
-
-**Follow our journey:**
-```
 🌐 Website: https://www.jayamesh.com
 📸 Instagram: https://instagram.com/jayamesh_devtech
 ```
