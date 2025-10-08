@@ -6,11 +6,20 @@ import ProjectWorkspace from "./components/ProjectWorkspace";
 import StatsOverview from "./components/StatsOverview";
 import DebugInfo from "./components/DebugInfo";
 import DatabaseReset from "./components/DatabaseReset";
+import PomodoroTimer from "./components/PomodoroTimer";
 
 export default function App() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showPomodoro, setShowPomodoro] = useState(false);
+  const [pomodoroState, setPomodoroState] = useState({
+    isActive: false,
+    timeLeft: 25 * 60,
+    mode: 'pomodoro',
+    sessionsCompleted: 0
+  });
+  
   const { 
     selectedProjectId, 
     setSelectedProjectId
@@ -23,6 +32,41 @@ export default function App() {
   useEffect(() => {
     loadProjects();
   }, [refreshTrigger]);
+
+  // Update timer even when component is hidden
+  useEffect(() => {
+    let interval = null;
+    
+    if (pomodoroState.isActive && pomodoroState.timeLeft > 0) {
+      interval = setInterval(() => {
+        setPomodoroState(prev => ({
+          ...prev,
+          timeLeft: prev.timeLeft - 1
+        }));
+      }, 1000);
+    } else if (pomodoroState.isActive && pomodoroState.timeLeft === 0) {
+      // Timer completed - handle completion
+      handleTimerCompletion();
+    }
+    
+    return () => clearInterval(interval);
+  }, [pomodoroState.isActive, pomodoroState.timeLeft]);
+
+  const handleTimerCompletion = () => {
+    setPomodoroState(prev => ({
+      ...prev,
+      isActive: false,
+      sessionsCompleted: prev.sessionsCompleted + 1
+    }));
+    
+    // Show notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Timer Complete!', {
+        body: 'Focus session finished!',
+        icon: '/favicon.ico'
+      });
+    }
+  };
 
   async function initializeApp() {
     try {
@@ -86,6 +130,31 @@ export default function App() {
     }
   };
 
+  const updatePomodoroState = (updates) => {
+    setPomodoroState(prev => ({ ...prev, ...updates }));
+  };
+
+  const resetTimer = () => {
+    const POMODORO_PRESETS = {
+      pomodoro: 25 * 60,
+      shortBreak: 5 * 60,
+      longBreak: 15 * 60,
+      deepWork: 90 * 60
+    };
+    
+    setPomodoroState(prev => ({
+      ...prev,
+      isActive: false,
+      timeLeft: POMODORO_PRESETS[prev.mode]
+    }));
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
@@ -118,6 +187,31 @@ export default function App() {
             
             <div className="flex items-center gap-4">
               <StatsOverview projects={projects} refreshTrigger={refreshTrigger} />
+              
+              {/* Pomodoro Toggle Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowPomodoro(!showPomodoro)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+                    pomodoroState.isActive 
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30' 
+                      : 'bg-slate-700/50 text-slate-300 border border-slate-600 hover:bg-slate-600/50'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${pomodoroState.isActive ? 'bg-red-400 animate-pulse' : 'bg-slate-400'}`} />
+                  🍅 {pomodoroState.isActive ? formatTime(pomodoroState.timeLeft) : 'Focus Timer'}
+                  {pomodoroState.isActive && (
+                    <span className="text-xs bg-red-500/30 px-1.5 py-0.5 rounded">
+                      Active
+                    </span>
+                  )}
+                </button>
+                
+                {/* Mini timer indicator when hidden */}
+                {pomodoroState.isActive && !showPomodoro && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full animate-ping" />
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -137,6 +231,16 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {/* Pomodoro Timer - Conditionally Rendered */}
+      {showPomodoro && (
+        <PomodoroTimer 
+          pomodoroState={pomodoroState}
+          onStateChange={updatePomodoroState}
+          onReset={resetTimer}
+          onClose={() => setShowPomodoro(false)}
+        />
+      )}
 
       <DebugInfo />
       <DatabaseReset/>

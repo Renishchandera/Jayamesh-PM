@@ -4,12 +4,16 @@ class JayameshDB extends Dexie {
   constructor() {
     super('JayameshCommander');
     
-    // Version 4 - Fixed schema with proper indexes
-    this.version(4).stores({
+    // Version 5 - Add Pomodoro sessions and Notes
+    this.version(5).stores({
       projects: '++id, title, type, status, priority, color, description, createdAt, updatedAt, archived',
       sections: '++id, projectId, name, type, color, order, createdAt',
       goals: '++id, projectId, sectionId, title, target, current, deadline, status, priority, createdAt, updatedAt',
-      tasks: '++id, projectId, sectionId, goalId, title, description, status, priority, type, recurring, dueDate, estimatedHours, actualHours, tags, createdAt, updatedAt'
+      tasks: '++id, projectId, sectionId, goalId, title, description, status, priority, type, recurring, dueDate, estimatedHours, actualHours, tags, createdAt, updatedAt',
+      notes: '++id, projectId, sectionId, title, content, tags, isPinned, createdAt, updatedAt',
+      pomodoroSessions: '++id, projectId, taskId, duration, completed, interrupted, notes, startTime, endTime, focusLevel'
+    }).upgrade(tx => {
+      // Migration code if needed
     });
   }
 }

@@ -4,12 +4,14 @@ import { useUI } from "../store";
 import SectionsView from "./SectionsView";
 import GoalsView from "./GoalsView";
 import TasksView from "./TasksView";
+import NotesView from "./NotesView";
 
 export default function ProjectWorkspace({ projectId, refreshProjects }) {
   const [project, setProject] = useState(null);
   const [sections, setSections] = useState([]);
   const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [dataVersion, setDataVersion] = useState(0);
   const { viewMode, setViewMode, selectedSectionId, setSelectedSectionId } = useUI();
 
@@ -21,23 +23,23 @@ export default function ProjectWorkspace({ projectId, refreshProjects }) {
     try {
       console.log("Loading project data for project:", projectId);
       
-      const [projectData, sectionsData] = await Promise.all([
+      const [projectData, sectionsData, goalsData, tasksData, notesData] = await Promise.all([
         db.projects.get(projectId),
-        db.sections.where('projectId').equals(projectId).sortBy('order')
+        db.sections.where('projectId').equals(projectId).sortBy('order'),
+        db.goals.where('projectId').equals(projectId).toArray(),
+        db.tasks.where('projectId').equals(projectId).toArray(),
+        db.notes.where('projectId').equals(projectId).toArray() // Load notes
       ]);
 
       setProject(projectData);
       setSections(sectionsData);
+      setGoals(goalsData);
+      setTasks(tasksData);
+      setNotes(notesData);
 
-      // Load goals and tasks for the project
-      const allGoals = await db.goals.where('projectId').equals(projectId).toArray();
-      const allTasks = await db.tasks.where('projectId').equals(projectId).toArray();
-      
-      console.log("Loaded goals:", allGoals.length);
-      console.log("Loaded tasks:", allTasks.length);
-      
-      setGoals(allGoals);
-      setTasks(allTasks);
+      console.log("Loaded goals:", goalsData.length);
+      console.log("Loaded tasks:", tasksData.length);
+      console.log("Loaded notes:", notesData.length);
 
       // Auto-select first section if none selected
       if (sectionsData.length > 0 && !selectedSectionId) {
@@ -70,10 +72,11 @@ export default function ProjectWorkspace({ projectId, refreshProjects }) {
   };
 
   const deleteSection = async (sectionId) => {
-    if (confirm('Delete this section and all its goals and tasks?')) {
+    if (confirm('Delete this section and all its goals, tasks, and notes?')) {
       try {
         await db.tasks.where('sectionId').equals(sectionId).delete();
         await db.goals.where('sectionId').equals(sectionId).delete();
+        await db.notes.where('sectionId').equals(sectionId).delete();
         await db.sections.delete(sectionId);
         refreshData();
         refreshProjects();
@@ -83,7 +86,7 @@ export default function ProjectWorkspace({ projectId, refreshProjects }) {
     }
   };
 
-  // Filter goals and tasks by selected section
+  // Filter goals, tasks, and notes by selected section
   const filteredGoals = selectedSectionId 
     ? goals.filter(goal => goal.sectionId === selectedSectionId)
     : goals;
@@ -92,8 +95,13 @@ export default function ProjectWorkspace({ projectId, refreshProjects }) {
     ? tasks.filter(task => task.sectionId === selectedSectionId)
     : tasks;
 
+  const filteredNotes = selectedSectionId 
+    ? notes.filter(note => note.sectionId === selectedSectionId)
+    : notes;
+
   console.log("Filtered Goals:", filteredGoals.length);
   console.log("Filtered Tasks:", filteredTasks.length);
+  console.log("Filtered Notes:", filteredNotes.length);
 
   if (!project) {
     return (
@@ -150,6 +158,17 @@ export default function ProjectWorkspace({ projectId, refreshProjects }) {
             >
               ✅ Tasks
             </button>
+            {/* Add Notes button */}
+            <button
+              onClick={() => setViewMode('notes')}
+              className={`px-4 py-2 rounded-md transition-all ${
+                viewMode === 'notes' 
+                  ? 'bg-yellow-500 text-white shadow-lg' 
+                  : 'text-slate-300 hover:text-white hover:bg-slate-600'
+              }`}
+            >
+              📝 Notes
+            </button>
           </div>
         </div>
       </div>
@@ -181,6 +200,17 @@ export default function ProjectWorkspace({ projectId, refreshProjects }) {
           <TasksView
             sections={sections}
             tasks={filteredTasks}
+            selectedSectionId={selectedSectionId}
+            onSelectSection={setSelectedSectionId}
+            refreshData={refreshData}
+          />
+        )}
+        
+        {/* Add Notes View */}
+        {viewMode === 'notes' && (
+          <NotesView
+            sections={sections}
+            notes={filteredNotes}
             selectedSectionId={selectedSectionId}
             onSelectSection={setSelectedSectionId}
             refreshData={refreshData}

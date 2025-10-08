@@ -25,7 +25,7 @@ export const useUI = create((set, get) => ({
   sidebarCollapsed: false,
   toggleSidebar: () => set(state => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   
-  viewMode: 'sections', // 'sections', 'goals', 'calendar'
+    viewMode: 'sections', // 'sections', 'goals', 'tasks', 'notes'
   setViewMode: (mode) => set({ viewMode: mode }),
 }));
 
